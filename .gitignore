@@ -1,0 +1,21 @@
+# Terraform files
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Ansible files
+inventory
+*.retry
+
+# Jenkins files
+*.log
+target/
+
+# General OS files
+.DS_Store
+Thumbs.db
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp

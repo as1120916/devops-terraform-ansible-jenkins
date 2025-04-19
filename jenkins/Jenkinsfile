@@ -1,22 +1,40 @@
 pipeline {
-  agent any
+    agent any
 
-  stages {
-    stage('Terraform Apply') {
-      steps {
-        dir('terraform') {
-          sh 'terraform init'
-          sh 'terraform apply -auto-approve'
-        }
-      }
+    environment {
+        TF_WORK_DIR = "terraform" // adjust if your TF files are elsewhere
     }
 
-    stage('Ansible Deployment') {
-      steps {
-        dir('ansible') {
-          sh 'ansible-playbook -i inventory playbook.yml'
+    stages {
+        stage('Terraform Init & Apply') {
+            steps {
+                dir("${env.TF_WORK_DIR}") {
+                    sh '''
+                    terraform init
+                    terraform plan -out=tfplan
+                    terraform apply -auto-approve tfplan
+                    '''
+                }
+            }
         }
-      }
+
+        stage('Run Ansible Playbook') {
+            steps {
+                sshagent(credentials: ['ansible-ec2-key']) {
+                    sh '''
+                    ssh -o StrictHostKeyChecking=no ec2-user@ec2-18-215-162-8.compute-1.amazonaws.com '
+                        cd /home/ec2-user &&
+                        ansible-playbook -i inventory playbook.yml
+                    '
+                    '''
+                }
+            }
+        }
     }
-  }
+
+    post {
+        always {
+            echo "Pipeline completed."
+        }
+    }
 }
